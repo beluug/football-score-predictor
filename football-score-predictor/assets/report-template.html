@@ -42,7 +42,8 @@
     }
     .mark svg { width: 25px; height: 25px; }
     h1 { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.08; font-weight: 780; }
-    .brand p, .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .brand p { margin: 5px 0 0; color: var(--muted); font-size: 14px; }
+    .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
     .status {
       display: flex; align-items: center; gap: 8px; padding: 9px 12px;
       border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.82);
@@ -116,7 +117,7 @@
     .metric small { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
     .dashboard { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.05fr); gap: 18px; align-items: start; }
     .score-list { display: grid; gap: 10px; padding: 16px 18px 18px; }
-    .score-row { display: grid; grid-template-columns: 34px 86px 1fr 58px; align-items: center; gap: 12px; min-height: 42px; padding: 8px 0; border-bottom: 1px solid #edf1ea; }
+    .score-row { display: grid; grid-template-columns: 34px 86px 1fr 54px; align-items: center; gap: 12px; min-height: 42px; padding: 8px 0; border-bottom: 1px solid #edf1ea; }
     .score-row:last-child { border-bottom: 0; }
     .rank { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; color: white; background: var(--ink); font-weight: 760; font-size: 13px; }
     .score { font-size: 22px; font-weight: 830; }
@@ -131,6 +132,9 @@
     .goal-label strong { font-size: 16px; }
     .chart-wrap { padding: 18px; }
     canvas { width: 100%; height: 286px; display: block; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; }
+    .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 18px 18px; }
+    .insight { padding: 13px; border-radius: 8px; background: var(--soft-green); font-size: 13px; line-height: 1.55; }
+    .insight b { display: block; margin-bottom: 5px; font-size: 14px; }
     .cards, .notes, .sources { display: grid; gap: 12px; padding: 16px 18px 18px; }
     .cards { grid-template-columns: repeat(2, 1fr); }
     .evidence, .note, .source { padding: 13px; border-radius: 8px; background: var(--soft-green); font-size: 13px; line-height: 1.55; }
@@ -155,7 +159,7 @@
       .team.right { text-align: left; }
       .right .crest { margin-left: 0; }
       .versus { width: 54px; height: 54px; }
-      .key-metrics, .footer-grid, .cards { grid-template-columns: 1fr; }
+      .key-metrics, .insights, .footer-grid, .cards { grid-template-columns: 1fr; }
       .goal-grid { grid-template-columns: repeat(2, 1fr); }
       .score-row { grid-template-columns: 30px 72px 1fr 52px; gap: 8px; }
     }
@@ -174,7 +178,7 @@
         </div>
         <div>
           <h1>足球比分竞猜模型报告</h1>
-          <p id="subtitle">AI 联网研究后生成比分、进球数、胜平负和可信度分析。</p>
+          <p id="subtitle">AI 根据输入的比赛信息生成概率排序、进球区间、胜负倾向和可信度。</p>
         </div>
       </div>
       <div class="status"><span class="dot"></span><span id="statusText"></span></div>
@@ -214,7 +218,7 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">胜平负可能性</h2>
-            <p class="panel-subtitle">综合模型输出、市场校准、阵容和赛程修正。</p>
+            <p class="panel-subtitle">综合进攻效率、防守稳定性、赛程负荷和主客场修正。</p>
           </div>
           <span class="badge" id="confidenceLabel"></span>
         </div>
@@ -244,7 +248,7 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">比分可能性排序</h2>
-            <p class="panel-subtitle">精确比分分布，单个比分概率通常不会很高。</p>
+            <p class="panel-subtitle">概率为归一化后的精确比分结果分布。</p>
           </div>
           <span class="badge" id="scoreCount"></span>
         </div>
@@ -255,63 +259,32 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">模型分析线型图</h2>
-            <p class="panel-subtitle">展示模型/市场概率在关键输入下的变化。</p>
+            <p class="panel-subtitle" id="trendSubtitle">赛前 7 天，主胜、平局、客胜概率的动态变化。</p>
           </div>
-          <span class="badge">趋势分析</span>
+          <span class="badge" id="trendBadge">趋势稳定</span>
         </div>
         <div class="chart-wrap">
           <canvas id="trendChart" width="760" height="330" aria-label="概率趋势折线图"></canvas>
         </div>
+        <div class="insights" id="insights"></div>
       </div>
     </section>
 
-    <section class="panel section">
+    <section class="panel" style="margin-top: 18px;">
       <div class="panel-head">
         <div>
           <h2 class="panel-title">可能进球数分布</h2>
           <p class="panel-subtitle">辅助判断大小球、保守比分和高比分风险。</p>
         </div>
-        <span class="badge">总进球</span>
+        <span class="badge" id="goalBadge">2-3 球最佳</span>
       </div>
       <div class="goal-grid" id="goalGrid"></div>
     </section>
 
-    <section class="panel section">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">关键证据</h2>
-          <p class="panel-subtitle">伤停、赔率、xG、赛程、战意、天气和裁判等输入。</p>
-        </div>
-        <span class="badge">联网核验</span>
-      </div>
-      <div class="cards" id="evidenceCards"></div>
-    </section>
-
-    <section class="dashboard section">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">模型解释</h2>
-            <p class="panel-subtitle">哪些模型或信号推动了最终结论。</p>
-          </div>
-        </div>
-        <div class="notes" id="modelNotes"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">不确定性与风险</h2>
-            <p class="panel-subtitle">降低可信度的因素和临场变动风险。</p>
-          </div>
-        </div>
-        <div class="notes" id="riskNotes"></div>
-      </div>
-    </section>
-
     <section class="footer-grid" aria-label="比赛信息">
       <div class="info"><span>比赛时间</span><strong id="kickoff"></strong></div>
-      <div class="info"><span>裁判</span><strong id="referee"></strong></div>
-      <div class="info"><span>数据状态</span><strong id="dataStatus"></strong></div>
+      <div class="info"><span>伤停摘要</span><strong id="injurySummary"></strong></div>
+      <div class="info"><span>盘口倾向</span><strong id="marketSummary"></strong></div>
       <div class="info"><span>模型版本</span><strong>football-score-predictor v0.1</strong></div>
     </section>
 
@@ -319,9 +292,12 @@
       <div class="panel-head">
         <div>
           <h2 class="panel-title">信息来源</h2>
-          <p class="panel-subtitle">用于伤停、赔率、赛程和新闻核验的来源。</p>
+          <p class="panel-subtitle">用于伤停、赔率、赛程、新闻和模型解释核验的来源。</p>
         </div>
       </div>
+      <div class="cards" id="evidenceCards"></div>
+      <div class="notes" id="modelNotes"></div>
+      <div class="notes" id="riskNotes"></div>
       <div class="sources" id="sources"></div>
     </section>
   </main>
@@ -355,13 +331,14 @@
       $("btts").textContent = pct(pred.btts_probability);
       $("upsetRisk").textContent = pct(pred.upset_risk);
       $("kickoff").textContent = text(match.kickoff);
-      $("referee").textContent = text(match.referee);
-      $("dataStatus").textContent = text(data.data_status);
+      $("injurySummary").textContent = text(data.summary?.injuries, firstCardSummary("injur"));
+      $("marketSummary").textContent = text(data.summary?.market, firstCardSummary("odds"));
 
       renderWdl();
       renderScores();
       renderGoals();
       renderCards();
+      renderInsights();
       renderNotes("modelNotes", data.model_notes || []);
       renderNotes("riskNotes", data.risk_notes || []);
       renderSources();
@@ -418,6 +395,30 @@
           <div style="margin-top:6px;color:#68726b;">${text(card.impact, "")}</div>
         </div>
       `).join("");
+    }
+
+    function renderInsights() {
+      const cards = data.evidence_cards || [];
+      const notes = data.model_notes || [];
+      const fallback = [
+        { title: "进攻端", summary: notes[0] || "主队进攻效率、xG 和射门质量是主要输入。" },
+        { title: "防守端", summary: notes[1] || "客队转换进攻与主队防线稳定性共同影响比分尾部。" },
+        { title: "节奏判断", summary: notes[2] || "赛程、战意、天气和盘口变化共同修正进球节奏。" }
+      ];
+      const insights = cards.slice(0, 3).map((card) => ({
+        title: card.title,
+        summary: card.impact || card.summary
+      }));
+      const finalInsights = (insights.length ? insights : fallback).slice(0, 3);
+      $("insights").innerHTML = finalInsights.map((item) => `
+        <div class="insight"><b>${text(item.title, "模型信号")}</b>${text(item.summary, "")}</div>
+      `).join("");
+    }
+
+    function firstCardSummary(pattern) {
+      const cards = data.evidence_cards || [];
+      const found = cards.find((card) => `${card.title || ""} ${card.summary || ""}`.toLowerCase().includes(pattern));
+      return found ? found.summary : "未提供，可信度已按数据完整度修正";
     }
 
     function renderNotes(id, notes) {

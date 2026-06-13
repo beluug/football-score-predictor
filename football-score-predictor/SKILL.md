@@ -39,6 +39,7 @@ Always browse/search the web for current match context before prediction unless 
    - Prepare report JSON matching `references/report-schema.md`.
    - Run `scripts/generate_report.py --input <report.json> --output <report.html>`.
    - If the user did not specify an output path, create the file in the current workspace with a clear name such as `football-prediction-<home>-vs-<away>.html`.
+   - Do not hand-code a new page design. The visual design must come from `assets/report-template.html`; only the report data may change.
 
 6. **Final response**
    - Link to the generated HTML file.
@@ -70,5 +71,7 @@ The HTML report must include:
 ## Report Generation Notes
 
 Use `scripts/generate_report.py` for deterministic HTML rendering. The script expects a JSON file and embeds it into `assets/report-template.html`. Keep the HTML static and self-contained so the user can open it directly in a browser.
+
+The report template is the canonical visual design. Do not rebuild, restyle, reorder, or simplify the HTML/CSS during normal report generation. If the user asks for a visual change, edit `assets/report-template.html` first, then generate from that template.
 
 When the user asks for only a preview/design, use plausible sample data but label it clearly as sample data. When the user asks for a real prediction, browse first and include sources.
