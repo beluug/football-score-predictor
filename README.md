@@ -40,6 +40,10 @@ football-score-predictor/
 ```text
 Use $football-score-predictor 分析 曼城 vs 皇马，生成 HTML 比分预测报告
 ```
+或者直接发给智能体
+```text
+帮我安装这个skill：https://github.com/beluug/football-score-predictor
+```
 
 真实预测时，Skill 要求智能体必须联网搜索和交叉验证当前信息，不能只凭记忆或历史印象直接给结论。
 
