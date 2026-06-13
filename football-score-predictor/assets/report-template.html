@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>足球比分竞猜模型报告</title>
+  <style>
+    :root {
+      --bg: #f4f6f1;
+      --panel: #ffffff;
+      --ink: #14211b;
+      --muted: #68726b;
+      --line: #dce3d8;
+      --pitch: #1f7a4d;
+      --pitch-dark: #14583a;
+      --gold: #d8a21b;
+      --blue: #3267b0;
+      --red: #c94b42;
+      --soft-green: #e7f3eb;
+      --soft-gold: #fff4cf;
+      --shadow: 0 16px 38px rgba(20, 33, 27, 0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(31, 122, 77, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(31, 122, 77, 0.05) 1px, transparent 1px),
+        var(--bg);
+      background-size: 42px 42px;
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+    .page { width: min(1320px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 34px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mark {
+      width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center;
+      color: white; background: var(--pitch); box-shadow: 0 10px 20px rgba(31,122,77,.24); flex: 0 0 auto;
+    }
+    .mark svg { width: 25px; height: 25px; }
+    h1 { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.08; font-weight: 780; }
+    .brand p, .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .status {
+      display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+      border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.82);
+      color: var(--muted); font-size: 13px; white-space: nowrap;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--pitch); box-shadow: 0 0 0 5px rgba(31,122,77,.12); }
+    .match-hero { display: grid; grid-template-columns: 1.08fr .92fr; gap: 18px; margin-bottom: 18px; }
+    .pitch-panel {
+      position: relative; min-height: 312px; overflow: hidden; border-radius: 8px; color: white; box-shadow: var(--shadow);
+      background:
+        linear-gradient(90deg, transparent 49.6%, rgba(255,255,255,.38) 49.6%, rgba(255,255,255,.38) 50.4%, transparent 50.4%),
+        radial-gradient(circle at 50% 50%, transparent 0 54px, rgba(255,255,255,.38) 55px 57px, transparent 58px),
+        repeating-linear-gradient(90deg, var(--pitch-dark) 0 12.5%, var(--pitch) 12.5% 25%);
+    }
+    .pitch-panel::before, .pitch-panel::after {
+      content: ""; position: absolute; top: 22%; width: 72px; height: 56%; border: 2px solid rgba(255,255,255,.38);
+    }
+    .pitch-panel::before { left: 0; border-left: 0; }
+    .pitch-panel::after { right: 0; border-right: 0; }
+    .match-content {
+      position: relative; z-index: 1; min-height: 312px; display: grid; grid-template-rows: auto 1fr auto;
+      padding: 24px; background: linear-gradient(90deg, rgba(11,33,23,.58), rgba(11,33,23,.20));
+    }
+    .league { display: flex; justify-content: space-between; gap: 12px; color: rgba(255,255,255,.76); font-size: 13px; }
+    .teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 18px 0; }
+    .team { min-width: 0; }
+    .team.right { text-align: right; }
+    .crest {
+      width: 58px; height: 58px; display: grid; place-items: center; margin-bottom: 10px;
+      border: 2px solid rgba(255,255,255,.48); border-radius: 8px; background: rgba(255,255,255,.16);
+      font-weight: 800; font-size: 18px; backdrop-filter: blur(8px);
+    }
+    .right .crest { margin-left: auto; }
+    .team-name { font-size: clamp(24px, 4vw, 46px); line-height: 1; font-weight: 830; overflow-wrap: anywhere; }
+    .team-meta { margin-top: 8px; color: rgba(255,255,255,.76); font-size: 14px; }
+    .versus {
+      display: grid; place-items: center; width: 72px; height: 72px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14); font-weight: 800; font-size: 18px;
+    }
+    .prediction-line {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding-top: 16px; border-top: 1px solid rgba(255,255,255,.22);
+    }
+    .big-pick { font-size: clamp(22px, 3vw, 36px); font-weight: 830; line-height: 1; }
+    .pick-note { margin-top: 6px; color: rgba(255,255,255,.74); font-size: 13px; }
+    .confidence-ring {
+      width: 112px; height: 112px; border-radius: 999px; display: grid; place-items: center;
+      background: radial-gradient(circle at center, rgba(255,255,255,.13) 0 56%, transparent 57%),
+                  conic-gradient(var(--gold) 0 var(--confidence), rgba(255,255,255,.22) var(--confidence) 100%);
+      flex: 0 0 auto;
+    }
+    .confidence-ring span {
+      display: grid; place-items: center; width: 78px; height: 78px; border-radius: 999px;
+      background: rgba(11,33,23,.76); font-size: 24px; font-weight: 830;
+    }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.93); box-shadow: var(--shadow); }
+    .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+    .panel-title { margin: 0; font-size: 17px; font-weight: 780; }
+    .badge { padding: 7px 10px; border-radius: 999px; background: var(--soft-gold); color: #7b5700; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .win-grid { display: grid; gap: 14px; padding: 18px; }
+    .win-row { display: grid; grid-template-columns: 74px 1fr 52px; align-items: center; gap: 12px; font-size: 14px; }
+    .bar { height: 13px; overflow: hidden; border-radius: 999px; background: #edf1ea; }
+    .fill { height: 100%; width: var(--value); border-radius: inherit; background: var(--pitch); }
+    .fill.draw { background: var(--gold); }
+    .fill.away { background: var(--blue); }
+    .prob { text-align: right; font-weight: 760; }
+    .key-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 18px 18px; }
+    .metric { min-height: 92px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 8px; font-size: 25px; line-height: 1; font-weight: 820; }
+    .metric small { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .dashboard { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.05fr); gap: 18px; align-items: start; }
+    .score-list { display: grid; gap: 10px; padding: 16px 18px 18px; }
+    .score-row { display: grid; grid-template-columns: 34px 86px 1fr 58px; align-items: center; gap: 12px; min-height: 42px; padding: 8px 0; border-bottom: 1px solid #edf1ea; }
+    .score-row:last-child { border-bottom: 0; }
+    .rank { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; color: white; background: var(--ink); font-weight: 760; font-size: 13px; }
+    .score { font-size: 22px; font-weight: 830; }
+    .score-track { height: 10px; border-radius: 999px; background: #edf1ea; overflow: hidden; }
+    .score-track span { display: block; width: var(--value); height: 100%; border-radius: inherit; background: var(--pitch); }
+    .score-prob { text-align: right; font-weight: 760; }
+    .goal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 16px 18px 18px; }
+    .goal-card { min-height: 96px; display: grid; align-content: end; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; }
+    .goal-bar { height: 48px; display: flex; align-items: end; }
+    .goal-bar span { width: 100%; height: var(--value); min-height: 8px; border-radius: 7px 7px 3px 3px; background: var(--gold); }
+    .goal-label { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 13px; }
+    .goal-label strong { font-size: 16px; }
+    .chart-wrap { padding: 18px; }
+    canvas { width: 100%; height: 286px; display: block; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; }
+    .cards, .notes, .sources { display: grid; gap: 12px; padding: 16px 18px 18px; }
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .evidence, .note, .source { padding: 13px; border-radius: 8px; background: var(--soft-green); font-size: 13px; line-height: 1.55; }
+    .evidence b, .note b, .source b { display: block; margin-bottom: 5px; font-size: 14px; }
+    .source { background: #fbfcfa; border: 1px solid var(--line); }
+    .source a { color: var(--blue); overflow-wrap: anywhere; }
+    .footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+    .info { padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.90); }
+    .info span { display: block; color: var(--muted); font-size: 12px; }
+    .info strong { display: block; margin-top: 7px; font-size: 15px; overflow-wrap: anywhere; }
+    .section { margin-top: 18px; }
+    @media (max-width: 980px) {
+      .match-hero, .dashboard { grid-template-columns: 1fr; }
+      .footer-grid, .cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 680px) {
+      .page { width: min(100% - 20px, 1320px); padding-top: 14px; }
+      .topbar, .prediction-line, .league { align-items: flex-start; flex-direction: column; }
+      .status { white-space: normal; }
+      .match-content { padding: 18px; }
+      .teams { grid-template-columns: 1fr; }
+      .team.right { text-align: left; }
+      .right .crest { margin-left: 0; }
+      .versus { width: 54px; height: 54px; }
+      .key-metrics, .footer-grid, .cards { grid-template-columns: 1fr; }
+      .goal-grid { grid-template-columns: repeat(2, 1fr); }
+      .score-row { grid-template-columns: 30px 72px 1fr 52px; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+            <path d="m12 7 4 3-1.5 5h-5L8 10l4-3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M4.2 10.2 8 10m8 0 3.8.2M9.5 15 7.8 19m6.7-4 1.7 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>足球比分竞猜模型报告</h1>
+          <p id="subtitle">AI 联网研究后生成比分、进球数、胜平负和可信度分析。</p>
+        </div>
+      </div>
+      <div class="status"><span class="dot"></span><span id="statusText"></span></div>
+    </header>
+
+    <section class="match-hero">
+      <div class="pitch-panel">
+        <div class="match-content">
+          <div class="league">
+            <span id="competition"></span>
+            <span id="venueWeather"></span>
+          </div>
+          <div class="teams">
+            <div class="team">
+              <div class="crest" id="homeCrest"></div>
+              <div class="team-name" id="homeTeam"></div>
+              <div class="team-meta">主队</div>
+            </div>
+            <div class="versus">VS</div>
+            <div class="team right">
+              <div class="crest" id="awayCrest"></div>
+              <div class="team-name" id="awayTeam"></div>
+              <div class="team-meta">客队</div>
+            </div>
+          </div>
+          <div class="prediction-line">
+            <div>
+              <div class="big-pick" id="recommendedScore"></div>
+              <div class="pick-note" id="headline"></div>
+            </div>
+            <div class="confidence-ring" id="confidenceRing"><span id="confidenceValue"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">胜平负可能性</h2>
+            <p class="panel-subtitle">综合模型输出、市场校准、阵容和赛程修正。</p>
+          </div>
+          <span class="badge" id="confidenceLabel"></span>
+        </div>
+        <div class="win-grid" id="wdlGrid"></div>
+        <div class="key-metrics">
+          <div class="metric">
+            <span class="metric-label">期望总进球</span>
+            <div class="metric-value" id="totalXg"></div>
+            <small id="xgSplit"></small>
+          </div>
+          <div class="metric">
+            <span class="metric-label">双方进球</span>
+            <div class="metric-value" id="btts"></div>
+            <small>BTTS 概率</small>
+          </div>
+          <div class="metric">
+            <span class="metric-label">爆冷风险</span>
+            <div class="metric-value" id="upsetRisk"></div>
+            <small>盘口/阵容/赛程综合</small>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="dashboard">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">比分可能性排序</h2>
+            <p class="panel-subtitle">精确比分分布，单个比分概率通常不会很高。</p>
+          </div>
+          <span class="badge" id="scoreCount"></span>
+        </div>
+        <div class="score-list" id="scoreList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">模型分析线型图</h2>
+            <p class="panel-subtitle">展示模型/市场概率在关键输入下的变化。</p>
+          </div>
+          <span class="badge">趋势分析</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trendChart" width="760" height="330" aria-label="概率趋势折线图"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">可能进球数分布</h2>
+          <p class="panel-subtitle">辅助判断大小球、保守比分和高比分风险。</p>
+        </div>
+        <span class="badge">总进球</span>
+      </div>
+      <div class="goal-grid" id="goalGrid"></div>
+    </section>
+
+    <section class="panel section">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">关键证据</h2>
+          <p class="panel-subtitle">伤停、赔率、xG、赛程、战意、天气和裁判等输入。</p>
+        </div>
+        <span class="badge">联网核验</span>
+      </div>
+      <div class="cards" id="evidenceCards"></div>
+    </section>
+
+    <section class="dashboard section">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">模型解释</h2>
+            <p class="panel-subtitle">哪些模型或信号推动了最终结论。</p>
+          </div>
+        </div>
+        <div class="notes" id="modelNotes"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">不确定性与风险</h2>
+            <p class="panel-subtitle">降低可信度的因素和临场变动风险。</p>
+          </div>
+        </div>
+        <div class="notes" id="riskNotes"></div>
+      </div>
+    </section>
+
+    <section class="footer-grid" aria-label="比赛信息">
+      <div class="info"><span>比赛时间</span><strong id="kickoff"></strong></div>
+      <div class="info"><span>裁判</span><strong id="referee"></strong></div>
+      <div class="info"><span>数据状态</span><strong id="dataStatus"></strong></div>
+      <div class="info"><span>模型版本</span><strong>football-score-predictor v0.1</strong></div>
+    </section>
+
+    <section class="panel section">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">信息来源</h2>
+          <p class="panel-subtitle">用于伤停、赔率、赛程和新闻核验的来源。</p>
+        </div>
+      </div>
+      <div class="sources" id="sources"></div>
+    </section>
+  </main>
+
+  <script>
+    window.REPORT_DATA = __REPORT_DATA__;
+
+    const data = window.REPORT_DATA;
+    const $ = (id) => document.getElementById(id);
+    const text = (value, fallback = "未提供") => value === undefined || value === null || value === "" ? fallback : String(value);
+    const pct = (value) => `${Number(value || 0).toFixed(Number(value || 0) % 1 ? 1 : 0)}%`;
+    const initials = (name) => text(name, "TEAM").split(/\s+/).map((part) => part[0]).join("").slice(0, 3).toUpperCase();
+
+    function init() {
+      const match = data.match || {};
+      const pred = data.prediction || {};
+      $("statusText").textContent = `${text(data.data_status, "report")} · 生成时间 ${text(data.generated_at)}`;
+      $("competition").textContent = [match.competition, match.stage].filter(Boolean).join(" · ") || "比赛信息";
+      $("venueWeather").textContent = [match.venue, match.weather].filter(Boolean).join(" · ") || "场地/天气未提供";
+      $("homeTeam").textContent = text(match.home_team, "主队");
+      $("awayTeam").textContent = text(match.away_team, "客队");
+      $("homeCrest").textContent = initials(match.home_team);
+      $("awayCrest").textContent = initials(match.away_team);
+      $("recommendedScore").textContent = `推荐比分：${text(pred.recommended_score, "-")}`;
+      $("headline").textContent = `${text(pred.headline, "")} 次选：${(pred.backup_scores || []).join(" / ") || "未提供"}`;
+      $("confidenceValue").textContent = pct(pred.confidence);
+      $("confidenceRing").style.setProperty("--confidence", `${Math.max(0, Math.min(100, Number(pred.confidence || 0)))}%`);
+      $("confidenceLabel").textContent = text(pred.confidence_label, "可信度");
+      $("totalXg").textContent = Number(pred.expected_goals?.total || 0).toFixed(2);
+      $("xgSplit").textContent = `${text(match.home_team, "主队")} ${Number(pred.expected_goals?.home || 0).toFixed(2)} / ${text(match.away_team, "客队")} ${Number(pred.expected_goals?.away || 0).toFixed(2)}`;
+      $("btts").textContent = pct(pred.btts_probability);
+      $("upsetRisk").textContent = pct(pred.upset_risk);
+      $("kickoff").textContent = text(match.kickoff);
+      $("referee").textContent = text(match.referee);
+      $("dataStatus").textContent = text(data.data_status);
+
+      renderWdl();
+      renderScores();
+      renderGoals();
+      renderCards();
+      renderNotes("modelNotes", data.model_notes || []);
+      renderNotes("riskNotes", data.risk_notes || []);
+      renderSources();
+      drawChart();
+    }
+
+    function renderWdl() {
+      const wdl = data.wdl || {};
+      const rows = [
+        ["主胜", wdl.home_win, ""],
+        ["平局", wdl.draw, "draw"],
+        ["客胜", wdl.away_win, "away"]
+      ];
+      $("wdlGrid").innerHTML = rows.map(([label, value, klass]) => `
+        <div class="win-row">
+          <span>${label}</span>
+          <div class="bar"><div class="fill ${klass}" style="--value:${Number(value || 0)}%"></div></div>
+          <span class="prob">${pct(value)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderScores() {
+      const scores = data.score_ranking || [];
+      const max = Math.max(...scores.map((item) => Number(item.probability || 0)), 1);
+      $("scoreCount").textContent = `Top ${scores.length}`;
+      $("scoreList").innerHTML = scores.map((item, index) => `
+        <div class="score-row">
+          <span class="rank">${index + 1}</span>
+          <span class="score">${text(item.score, "-")}</span>
+          <div class="score-track"><span style="--value:${Number(item.probability || 0) / max * 100}%"></span></div>
+          <span class="score-prob">${pct(item.probability)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderGoals() {
+      const goals = data.goal_distribution || [];
+      const max = Math.max(...goals.map((item) => Number(item.probability || 0)), 1);
+      $("goalGrid").innerHTML = goals.map((item) => `
+        <div class="goal-card">
+          <div class="goal-bar"><span style="--value:${Number(item.probability || 0) / max * 100}%"></span></div>
+          <div class="goal-label"><strong>${text(item.goals)}球</strong><span>${pct(item.probability)}</span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderCards() {
+      const cards = data.evidence_cards || [];
+      $("evidenceCards").innerHTML = cards.map((card) => `
+        <div class="evidence">
+          <b>${text(card.title, "证据")}</b>
+          <div>${text(card.summary, "")}</div>
+          <div style="margin-top:6px;color:#68726b;">${text(card.impact, "")}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderNotes(id, notes) {
+      $(id).innerHTML = notes.map((note, index) => `<div class="note"><b>${index + 1}</b>${text(note, "")}</div>`).join("");
+    }
+
+    function renderSources() {
+      const sources = data.sources || [];
+      $("sources").innerHTML = sources.length ? sources.map((source) => `
+        <div class="source">
+          <b>${text(source.label, "Source")}</b>
+          <a href="${text(source.url, "#")}" target="_blank" rel="noreferrer">${text(source.url, "")}</a>
+          <div>${text(source.note, "")}</div>
+          <div style="color:#68726b;">访问时间：${text(source.accessed_at, "")}</div>
+        </div>
+      `).join("") : `<div class="source"><b>暂无来源</b>此报告未提供来源，可信度应下调。</div>`;
+    }
+
+    function drawChart() {
+      const canvas = $("trendChart");
+      const ctx = canvas.getContext("2d");
+      const trend = data.trend || {};
+      const labels = trend.labels || [];
+      const series = [
+        { name: "主胜", color: "#1f7a4d", values: trend.home_win || [] },
+        { name: "平局", color: "#d8a21b", values: trend.draw || [] },
+        { name: "客胜", color: "#3267b0", values: trend.away_win || [] }
+      ].filter((item) => item.values.length);
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = { top: 34, right: 28, bottom: 48, left: 48 };
+      const chartW = width - pad.left - pad.right;
+      const chartH = height - pad.top - pad.bottom;
+      const all = series.flatMap((item) => item.values.map(Number));
+      const min = Math.max(0, Math.floor((Math.min(...all, 0) - 5) / 5) * 5);
+      const max = Math.min(100, Math.ceil((Math.max(...all, 50) + 5) / 5) * 5);
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.font = "13px Inter, Microsoft YaHei, sans-serif";
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#dce3d8";
+      ctx.fillStyle = "#68726b";
+      for (let i = 0; i <= 5; i++) {
+        const y = pad.top + chartH * i / 5;
+        const value = max - (max - min) * i / 5;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(`${Math.round(value)}%`, 10, y + 4);
+      }
+      labels.forEach((label, i) => {
+        const x = pad.left + chartW * i / Math.max(labels.length - 1, 1);
+        ctx.fillStyle = "#68726b";
+        ctx.fillText(label, x - 12, height - 18);
+      });
+      series.forEach((item) => {
+        ctx.beginPath();
+        item.values.forEach((value, i) => {
+          const x = pad.left + chartW * i / Math.max(item.values.length - 1, 1);
+          const y = pad.top + chartH * (max - Number(value)) / Math.max(max - min, 1);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 4;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+        item.values.forEach((value, i) => {
+          const x = pad.left + chartW * i / Math.max(item.values.length - 1, 1);
+          const y = pad.top + chartH * (max - Number(value)) / Math.max(max - min, 1);
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = "#fbfcfa";
+          ctx.fill();
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        });
+      });
+      let legendX = pad.left;
+      series.forEach((item) => {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(legendX, 14, 16, 8);
+        ctx.fillStyle = "#14211b";
+        ctx.fillText(item.name, legendX + 24, 22);
+        legendX += 82;
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

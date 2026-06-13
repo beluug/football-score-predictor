@@ -1,0 +1,87 @@
+# Report JSON Schema
+
+Create a JSON object with these fields before running `scripts/generate_report.py`.
+
+```json
+{
+  "generated_at": "2026-06-13 10:30",
+  "data_status": "real research | sample preview | partial data",
+  "match": {
+    "competition": "UEFA Champions League",
+    "stage": "Semi-final first leg",
+    "home_team": "Manchester City",
+    "away_team": "Real Madrid",
+    "kickoff": "2026-06-18 03:00 Asia/Hong_Kong",
+    "venue": "Etihad Stadium",
+    "weather": "16C light rain",
+    "referee": "Unknown"
+  },
+  "prediction": {
+    "recommended_score": "2-1",
+    "backup_scores": ["1-1", "2-2", "1-0"],
+    "confidence": 68,
+    "confidence_label": "medium-high",
+    "headline": "Home side slight edge, but draw risk remains material.",
+    "expected_goals": {
+      "home": 1.58,
+      "away": 1.14,
+      "total": 2.72
+    },
+    "btts_probability": 61,
+    "upset_risk": 24
+  },
+  "wdl": {
+    "home_win": 46,
+    "draw": 28,
+    "away_win": 26
+  },
+  "score_ranking": [
+    { "score": "2-1", "probability": 12.8 },
+    { "score": "1-1", "probability": 11.6 }
+  ],
+  "goal_distribution": [
+    { "goals": "0", "probability": 5 },
+    { "goals": "1", "probability": 13 },
+    { "goals": "2", "probability": 28 },
+    { "goals": "3", "probability": 32 },
+    { "goals": "4+", "probability": 22 }
+  ],
+  "trend": {
+    "labels": ["D-7", "D-6", "D-5", "D-4", "D-3", "D-2", "D-1"],
+    "home_win": [41, 42, 43, 43, 45, 46, 46],
+    "draw": [30, 30, 29, 29, 28, 28, 28],
+    "away_win": [29, 28, 28, 28, 27, 26, 26]
+  },
+  "evidence_cards": [
+    {
+      "title": "Injuries and lineup",
+      "summary": "Home rotation defender out; away midfielder doubtful.",
+      "impact": "Slightly raises both-teams-to-score and 2-1/1-1 paths."
+    }
+  ],
+  "model_notes": [
+    "Dixon-Coles lifts 1-1 and 1-0 versus plain Poisson.",
+    "Market de-vig probabilities broadly agree with model home edge."
+  ],
+  "risk_notes": [
+    "Lineups are not confirmed; reduce confidence if away midfielder starts."
+  ],
+  "sources": [
+    {
+      "label": "Source name",
+      "url": "https://example.com",
+      "accessed_at": "2026-06-13 10:25 Asia/Hong_Kong",
+      "note": "Injury update / odds snapshot / xG data"
+    }
+  ]
+}
+```
+
+## Field Rules
+
+- Use percentages as numbers from 0 to 100, not strings.
+- Keep `confidence` from 0 to 100.
+- `score_ranking` should usually include 8-12 scores.
+- `goal_distribution` should include `0`, `1`, `2`, `3`, and `4+` or a richer total-goals table.
+- `trend` can represent market/model movement over days, or if historical trend is unavailable, use scenario points such as `Base`, `Lineup`, `Odds`, `Schedule`, `Final` and explain that in model notes.
+- Sources are required for real reports. If source URLs are missing, set `data_status` to `partial data` and explain the limitation.
