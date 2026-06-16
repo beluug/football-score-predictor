@@ -90,10 +90,22 @@ Use $football-score-predictor 分析 曼城 vs 皇马，生成 HTML 比分预测
 
 Skill 内置了静态 HTML 模板和生成脚本。
 
-使用方式：
+真实预测必须先运行严格计算脚本：
+
+```bash
+python football-score-predictor/scripts/calculate_prediction.py --strict --input calculation-input.json --output report.json
+```
+
+然后再生成 HTML：
 
 ```bash
 python football-score-predictor/scripts/generate_report.py --input report.json --output report.html
+```
+
+`calculation-input.json` 需要符合：
+
+```text
+football-score-predictor/references/calculation-input-schema.md
 ```
 
 `report.json` 需要符合：
@@ -103,6 +115,8 @@ football-score-predictor/references/report-schema.md
 ```
 
 生成的 HTML 是自包含文件，可以直接用浏览器打开。
+
+严格模式下，如果缺少必要数据、来源、LightGBM/XGBoost 外部训练模型输出或概率校准信息，脚本会停止，而不是生成一个看似完整但没有真实计算支撑的报告。
 
 ## 信息质量要求
 
